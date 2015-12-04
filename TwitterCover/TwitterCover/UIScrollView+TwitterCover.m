@@ -101,17 +101,27 @@ static char UIScrollViewTwitterCover;
 {
     [super setImage:image];
     [blurImages_ removeAllObjects];
-    [self prepareForBlurImages];
+    
+    [blurImages_ addObject:image];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+        [self prepareForBlurImages];
+    });
     
 }
 
 - (void)prepareForBlurImages
 {
-    CGFloat factor = 0.1;
-    [blurImages_ addObject:self.image];
-    for (NSUInteger i = 0; i < 20; i++) {
-        [blurImages_ addObject:[self.image boxblurImageWithBlur:factor]];
-        factor+=0.04;
+    if (self.image) {
+        CGFloat factor = 0.1;
+        [blurImages_ addObject:self.image];
+        for (NSUInteger i = 0; i < 20; i++) {
+            [blurImages_ addObject:[self.image boxblurImageWithBlur:factor]];
+            factor+=0.04;
+        }
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self layoutSubviews];
+        });
     }
 }
 
@@ -146,7 +156,7 @@ static char UIScrollViewTwitterCover;
         else if(index >= blurImages_.count) {
             index = blurImages_.count - 1;
         }
-        UIImage *image = blurImages_[index];
+        UIImage *image = [blurImages_ count] > index ? blurImages_[index] : nil;
         if (self.image != image) {
             [super setImage:image];
         }
@@ -156,7 +166,7 @@ static char UIScrollViewTwitterCover;
         topView.frame = CGRectMake(0, 0, [UIScreen mainScreen].bounds.size.width, topView.bounds.size.height);
 
         self.frame = CGRectMake(0,topView.bounds.size.height, [UIScreen mainScreen].bounds.size.width, CHTwitterCoverViewHeight);
-        UIImage *image = blurImages_[0];
+        UIImage *image = [blurImages_ count] > 0 ? blurImages_[0] : nil;
 
         if (self.image != image) {
             [super setImage:image];
